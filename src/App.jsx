@@ -1,7 +1,6 @@
 import { initializeApp } from "firebase/app"
 import { getFirestore, collection, doc, setDoc, onSnapshot, updateDoc, addDoc, getDoc } from "firebase/firestore"
 import { useState } from "react"
-import { useEffect } from "react"
 import { useRef } from "react"
 
 const firebaseConfig = {
@@ -15,37 +14,29 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig)
 const firestore = getFirestore()
 
-const servers = {
-  iceServers: [{urls: ["stun:stun1.l.google.com:19302","stun:stun2.l.google.com:19302"]}],
-  iceCandidatePoolSize: 10,
-}
-let pc = new RTCPeerConnection(servers)
+let pc = new RTCPeerConnection({iceServers:[{urls:["stun:stun1.l.google.com:19302","stun:stun2.l.google.com:19302"]}], iceCandidatePoolSize:10})
 
-let localStream = null
-let remoteStream = null
-
+let localStream = null,
+    remoteStream = null
 
 function App() {
-  const [inCall, setCall] = useState(false)
-  const [webcamActive, setWebcam] = useState(false)
-
-  const localVideo = useRef(null)
-  const remoteVideo = useRef(null)
-  const callInput = useRef(null)
+  const [inCall, setCall] = useState(false),
+        [webcamActive, setWebcam] = useState(false),
+        localVideo = useRef(null),
+        remoteVideo = useRef(null),
+        callInput = useRef(null)
 
   const getLocalStream = async () => {
     localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true })
     remoteStream = new MediaStream()
     localStream.getTracks().forEach((track) => {pc.addTrack(track, localStream)})
-    pc.ontrack = e => {e.streams[0].getTracks().forEach(track => {remoteStream.addTrack(track)})}
+    pc.ontrack = e => {console.log("Streams ! ", e.streams);e.streams[0].getTracks().forEach(track => {remoteStream.addTrack(track)})}
     localVideo.current.srcObject = localStream
     remoteVideo.current.srcObject = remoteStream
-
     setWebcam(true)
   }
 
   const createCall = async () => {
-    console.log("yop")
     const callDoc = doc(collection(firestore, 'calls'))
     const offerCandidates = collection(callDoc, 'offerCandidates')
     const answerCandidates = collection(callDoc, 'answerCandidates')
@@ -99,10 +90,8 @@ function App() {
 
     onSnapshot(offerCandidates, (snapshot) => {
       snapshot.docChanges().forEach((change) => {
-        console.log(change)
         if (change.type === 'added') {
           let data = change.doc.data()
-          console.log(new RTCIceCandidate(data))
           pc.addIceCandidate(new RTCIceCandidate(data))
         }
       })
@@ -112,7 +101,7 @@ function App() {
   return (
     <div className="App">
       <div className="videos">
-        <video ref={localVideo} autoPlay playsInline />
+        <video ref={localVideo} autoPlay playsInline muted/>
         <video ref={remoteVideo} autoPlay playsInline />
       </div>
       <button onClick={()=>getLocalStream()} disabled={webcamActive}>Webcam</button>

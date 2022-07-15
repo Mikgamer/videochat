@@ -1,0 +1,7 @@
+video {
+  width: 350px;
+  height: 200px;
+  margin: 5px 10px;
+  border-radius: 10px;
+  background: rgb(31, 31, 31);
+}
