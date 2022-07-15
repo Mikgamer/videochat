@@ -1,9 +1,11 @@
 import { initializeApp } from "firebase/app"
 import { getFirestore, collection, doc, setDoc, onSnapshot, updateDoc, addDoc, getDoc } from "firebase/firestore"
+import { useState } from "react"
+import { useEffect } from "react"
 import { useRef } from "react"
 
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API,
+  apiKey: await import.meta.env.VITE_FIREBASE_API,
   authDomain: "videochat-mikgamer.firebaseapp.com",
   databaseURL: "https://videochat-mikgamer-default-rtdb.europe-west1.firebasedatabase.app",
   projectId: "videochat-mikgamer",
@@ -24,24 +26,26 @@ let remoteStream = null
 
 
 function App() {
+  const [inCall, setCall] = useState(false)
+  const [webcamActive, setWebcam] = useState(false)
+
   const localVideo = useRef(null)
   const remoteVideo = useRef(null)
   const callInput = useRef(null)
 
   const getLocalStream = async () => {
     localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true })
-    localStream.getTracks().forEach((track) => {pc.addTrack(track, localStream)})
-    localVideo.current.srcObject = localStream;
-  }
-
-  const createRemoteStream = () => {
     remoteStream = new MediaStream()
+    localStream.getTracks().forEach((track) => {pc.addTrack(track, localStream)})
     pc.ontrack = e => {e.streams[0].getTracks().forEach(track => {remoteStream.addTrack(track)})}
-    remoteVideo.srcObject = remoteStream
+    localVideo.current.srcObject = localStream
+    remoteVideo.current.srcObject = remoteStream
+
+    setWebcam(true)
   }
-  createRemoteStream()
 
   const createCall = async () => {
+    console.log("yop")
     const callDoc = doc(collection(firestore, 'calls'))
     const offerCandidates = collection(callDoc, 'offerCandidates')
     const answerCandidates = collection(callDoc, 'answerCandidates')
@@ -69,6 +73,8 @@ function App() {
         }
       })
     })
+
+    setCall(true)
   }
 
   const answerCall = async () => {
@@ -89,12 +95,14 @@ function App() {
   
     const answer = {type:answerDescription.type, sdp:answerDescription.sdp}
   
-    await updateDoc(callDoc, answer)
+    await updateDoc(callDoc, {answer})
 
     onSnapshot(offerCandidates, (snapshot) => {
       snapshot.docChanges().forEach((change) => {
+        console.log(change)
         if (change.type === 'added') {
           let data = change.doc.data()
+          console.log(new RTCIceCandidate(data))
           pc.addIceCandidate(new RTCIceCandidate(data))
         }
       })
@@ -107,11 +115,11 @@ function App() {
         <video ref={localVideo} autoPlay playsInline />
         <video ref={remoteVideo} autoPlay playsInline />
       </div>
-      <button onClick={()=>getLocalStream()}>Webcam</button>
-      <button onClick={()=>createCall()}>Call</button>
+      <button onClick={()=>getLocalStream()} disabled={webcamActive}>Webcam</button>
+      <button onClick={()=>createCall()} disabled={!webcamActive || inCall}>Call</button>
       <input ref={callInput} />
-      <button onClick={()=>answerCall()}>Answer</button>
-      <button>Hangup</button>
+      <button onClick={()=>answerCall()} disabled={!webcamActive || inCall}>Answer</button>
+      <button disabled={!inCall}>Hangup</button>
     </div>
   )
 }
