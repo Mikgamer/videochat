@@ -5,7 +5,7 @@ import { useEffect } from "react"
 import { useRef } from "react"
 
 const firebaseConfig = {
-  apiKey: await import.meta.env.VITE_FIREBASE_API,
+  apiKey: import.meta.env.VITE_FIREBASE_API,
   authDomain: "videochat-mikgamer.firebaseapp.com",
   databaseURL: "https://videochat-mikgamer-default-rtdb.europe-west1.firebasedatabase.app",
   projectId: "videochat-mikgamer",
