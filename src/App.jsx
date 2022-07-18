@@ -34,7 +34,7 @@ function App() {
     remoteStream = new MediaStream()
     localStream.getTracks().forEach((track) => {pc.addTrack(track, localStream)})
     pc.ontrack = e => {e.streams[0].getTracks().forEach(track => {remoteStream.addTrack(track)})}
-    pc.oniceconnectionstatechange = () => {if (pc.iceConnectionState == 'disconnected') setVideoTimeout(true)}
+    pc.oniceconnectionstatechange = () => {if (pc.iceConnectionState == 'disconnected') {setVideoTimeout(true)} else setVideoTimeout(false)}
 
     localVideo.current.srcObject = localStream
     remoteVideo.current.srcObject = remoteStream
@@ -110,7 +110,6 @@ function App() {
           let data = change.doc.data()
           pc.addIceCandidate(new RTCIceCandidate(data))
           setOtherUser(true)
-          console.log(data, pc.iceConnectionState)
         }
       })
     })
